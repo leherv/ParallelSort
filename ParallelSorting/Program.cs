@@ -1,21 +1,26 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ParallelSorting
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             const int numberOfRuns = 100;
-            int[] testData;
+            var testData = Array.Empty<int>();
             var sw = new Stopwatch();
             for (var i = 0; i < numberOfRuns; i++)
             {
                 testData = TestData.GetTestData();
                 sw.Start();
-                SerialQuickSort(testData);
-                // testData = SerialMergeSort(testData);
+                // SerialQuickSort(testData);
+                SerialMergeSort(testData);
+                // testData = await Parallel_Merge_Sort(testData);
+                // await ParallelQuickSort(testData);
                 sw.Stop();
             }
             var elapsedMilliseconds = sw.Elapsed.TotalMilliseconds;
@@ -29,25 +34,30 @@ namespace ParallelSorting
 
         /***********************Parallel MergeSort***********************/
 
-        private static int[] ParallelMergeSort(int[] arr)
+        private static async Task<int[]> ParallelMergeSort(int[] arr)
         {
             return arr.Length <= 1
                 ? arr
-                : Parallel_Merge_Sort(arr);
+                : await Parallel_Merge_Sort(arr);
         }
 
-        private static int[] Parallel_Merge_Sort(int[] arr)
+        private static async Task<int[]> Parallel_Merge_Sort(int[] arr)
         {
             if (arr.Length == 1)
                 return arr;
             var middle = arr.Length / 2;
             var left = Helper.CopyArray(arr, 0, middle);
             var right = Helper.CopyArray(arr, middle, arr.Length);
-            left = Parallel_Merge_Sort(left);
-            right = Parallel_Merge_Sort(right);
+
+            var leftTask = Parallel_Merge_Sort(left);
+            var rightTask =  Parallel_Merge_Sort(right);
+            var results = await Task.WhenAll(leftTask, rightTask);
+            
+            left = results[0];
+            right = results[1];
             return Merge(left, right);
         }
-
+        
         /***********************Serial MergeSort***********************/
 
         private static int[] SerialMergeSort(int[] arr)
@@ -68,11 +78,11 @@ namespace ParallelSorting
             right = Merge_Sort(right);
             return Merge(left, right);
         }
-
-        private static int[] Merge(int[] first, int[] second)
+        
+        private static int[] Merge(IReadOnlyList<int> first, IReadOnlyList<int> second)
         {
-            var sizeFirst = first.Length;
-            var sizeSecond = second.Length;
+            var sizeFirst = first.Count;
+            var sizeSecond = second.Count;
             var combinedArr = new int[sizeFirst + sizeSecond];
             var indexFirst = 0;
             var indexSecond = 0;
@@ -100,6 +110,24 @@ namespace ParallelSorting
             }
 
             return combinedArr;
+        }
+        
+        /***********************Parallel QuickSort***********************/
+        
+        private static async Task ParallelQuickSort(int[] arr)
+        {
+            if (arr.Length <= 1)
+                return;
+            await Parallel_Quick_Sort(arr, 0, arr.Length - 1);
+        }
+        
+        private static async Task Parallel_Quick_Sort(int[] arr, int left, int right)
+        {
+            if (left >= right)
+                return;
+            var pivot = Partition(arr, left, right);
+            Parallel_Quick_Sort(arr, left, pivot - 1); 
+            Parallel_Quick_Sort(arr, pivot + 1, right);
         }
 
         
