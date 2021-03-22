@@ -8,11 +8,12 @@ Intel i7-9750H @2.6GHz; 6 Cores
 
 ## Sequential version of the algorithms
 
+### MergeSort
+Average of 100 runs with the test data: **24.42 ms**
+
 ### QuickSort
 Average of 100 runs with the test data: **7.74 ms**
 
-### MergeSort
-Average of 100 runs with the test data: **24.42 ms**
 
 ## Naive parallelization
 
@@ -27,7 +28,14 @@ Again sorting is slower but this time it only took 1.25 times longer.
 
 
 ## Recursion with thresholds
+I took the average of 10 runs with each threshold from 0-1000 and wrote the data to a csv-file. I then generated the following graphs (x axis is the threshold):
+### Mergesort
+As you can see in the graph the best threshold is somewhere between 10 and 450 with my hardware and 100.000 randomly generated numbers. But we still do not really get speedup if you compare to the sequential solution...
+![executionTime](executionTime_threshold_mergeSort.png "executionTime")
 
+### QuickSort
+I would say we have the same conclusion here. We get speedup compared to the naive parallel solution but not compared to the sequential solution. Also the best threshold will be around 10.
+![executionTime](executionTime_threshold_quickSort.png "executionTime")
 
 ## Note:
 * QuickSort is faster in our tests because it generally works better on small collection sizes while MergeSort works better on big collection sizes.

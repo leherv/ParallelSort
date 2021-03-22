@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
+using System.Globalization;
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace ParallelSorting
@@ -10,47 +12,75 @@ namespace ParallelSorting
     {
         static async Task Main(string[] args)
         {
-            const int numberOfRuns = 100;
             var testData = Array.Empty<int>();
-            var sw = new Stopwatch();
-            for (var i = 0; i < numberOfRuns; i++)
-            {
-                testData = TestData.GetTestData();
-                sw.Start();
-                // SerialQuickSort(testData);
-                SerialMergeSort(testData);
-                // testData = await Parallel_Merge_Sort(testData);
-                // await ParallelQuickSort(testData);
-                sw.Stop();
-            }
-            var elapsedMilliseconds = sw.Elapsed.TotalMilliseconds;
-            var avgTimeMs = elapsedMilliseconds / numberOfRuns;
-            Console.WriteLine($"Average execution time: {avgTimeMs.ToString()} ms.");
             
-            // Helper.PrintArray(testData);
+            // experiments with serial and naive parallel
+            // const int numberOfRuns = 100;
+            // var sw = new Stopwatch();
+            // for (var i = 0; i < numberOfRuns; i++)
+            // {
+            //     testData = TestData.GetTestData();
+            //     sw.Start();
+            //     // SerialQuickSort(testData);
+            //     // SerialMergeSort(testData);
+            //     // testData = await Parallel_Merge_Sort(testData, 0);
+            //     // await ParallelQuickSort(testData, 0);
+            //     sw.Stop();
+            // }
+            // var elapsedMilliseconds = sw.Elapsed.TotalMilliseconds;
+            // var avgTimeMs = elapsedMilliseconds / numberOfRuns;
+            // Console.WriteLine($"Average execution time: {avgTimeMs.ToString()} ms.");
+            
+            
+            // experiments with threshold values
+            const int numberOfRunsThreshold = 10;
+            var csv = new StringBuilder();
+            csv.AppendLine("threshold,executionTime");
+            for (var i = 0; i < 1000; i++)
+            {
+                var sw = new Stopwatch();
+                for (var j = 0; j < numberOfRunsThreshold; j++)
+                {
+                    testData = TestData.GetTestData();
+                    sw.Start();
+                    // testData = await Parallel_Merge_Sort(testData, i);
+                    await ParallelQuickSort(testData, i);
+                    sw.Stop();
+                }
+                var elapsedMillisecondsThreshold = sw.Elapsed.TotalMilliseconds;
+                var avgTimeMsThreshold = elapsedMillisecondsThreshold / numberOfRunsThreshold;
+                csv.AppendLine($"{i}, {Math.Round(avgTimeMsThreshold, 2).ToString(CultureInfo.InvariantCulture)}");
+            }
+            
+            await File.WriteAllTextAsync("threshold_performance.csv", csv.ToString());
+            
         }
         
 
 
         /***********************Parallel MergeSort***********************/
 
-        private static async Task<int[]> ParallelMergeSort(int[] arr)
+        private static async Task<int[]> ParallelMergeSort(int[] arr, int threshold)
         {
             return arr.Length <= 1
                 ? arr
-                : await Parallel_Merge_Sort(arr);
+                : await Parallel_Merge_Sort(arr, threshold);
         }
 
-        private static async Task<int[]> Parallel_Merge_Sort(int[] arr)
+        private static async Task<int[]> Parallel_Merge_Sort(int[] arr, int threshold)
         {
             if (arr.Length == 1)
                 return arr;
             var middle = arr.Length / 2;
+            if (middle < threshold)
+            {
+                return Merge_Sort(arr);
+            }
+            
             var left = Helper.CopyArray(arr, 0, middle);
             var right = Helper.CopyArray(arr, middle, arr.Length);
-
-            var leftTask = Parallel_Merge_Sort(left);
-            var rightTask =  Parallel_Merge_Sort(right);
+            var leftTask = Parallel_Merge_Sort(left, threshold);
+            var rightTask =  Parallel_Merge_Sort(right, threshold);
             var results = await Task.WhenAll(leftTask, rightTask);
             
             left = results[0];
@@ -114,20 +144,35 @@ namespace ParallelSorting
         
         /***********************Parallel QuickSort***********************/
         
-        private static async Task ParallelQuickSort(int[] arr)
+        private static async Task ParallelQuickSort(int[] arr, int threshold)
         {
             if (arr.Length <= 1)
                 return;
-            await Parallel_Quick_Sort(arr, 0, arr.Length - 1);
+            await Parallel_Quick_Sort(arr, 0, arr.Length - 1, threshold);
         }
         
-        private static async Task Parallel_Quick_Sort(int[] arr, int left, int right)
+        private static async Task Parallel_Quick_Sort(int[] arr, int left, int right, int threshold)
         {
             if (left >= right)
                 return;
             var pivot = Partition(arr, left, right);
-            Parallel_Quick_Sort(arr, left, pivot - 1); 
-            Parallel_Quick_Sort(arr, pivot + 1, right);
+            if (pivot - left < threshold)
+            {
+                Quick_Sort(arr, left, pivot - 1);
+            }
+            else
+            {
+                Parallel_Quick_Sort(arr, left, pivot - 1, threshold);
+            }
+
+            if (right - pivot < threshold)
+            {
+                Quick_Sort(arr, pivot + 1, right);
+            }
+            else
+            {
+                Parallel_Quick_Sort(arr, pivot + 1, right, threshold);
+            }
         }
 
         
