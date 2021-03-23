@@ -15,44 +15,44 @@ namespace ParallelSorting
             var testData = Array.Empty<int>();
             
             // experiments with serial and naive parallel
-            // const int numberOfRuns = 100;
-            // var sw = new Stopwatch();
-            // for (var i = 0; i < numberOfRuns; i++)
-            // {
-            //     testData = TestData.GetTestData();
-            //     sw.Start();
-            //     // SerialQuickSort(testData);
-            //     // SerialMergeSort(testData);
-            //     // testData = await Parallel_Merge_Sort(testData, 0);
-            //     // await ParallelQuickSort(testData, 0);
-            //     sw.Stop();
-            // }
-            // var elapsedMilliseconds = sw.Elapsed.TotalMilliseconds;
-            // var avgTimeMs = elapsedMilliseconds / numberOfRuns;
-            // Console.WriteLine($"Average execution time: {avgTimeMs.ToString()} ms.");
+            const int numberOfRuns = 100;
+            var sw = new Stopwatch();
+            for (var i = 0; i < numberOfRuns; i++)
+            {
+                testData = TestData.GetTestData();
+                sw.Start();
+                // SerialQuickSort(testData);
+                // SerialMergeSort(testData);
+                // testData = await Parallel_Merge_Sort(testData, 0);
+                await ParallelQuickSort(testData, 0);
+                sw.Stop();
+            }
+            var elapsedMilliseconds = sw.Elapsed.TotalMilliseconds;
+            var avgTimeMs = elapsedMilliseconds / numberOfRuns;
+            Console.WriteLine($"Average execution time: {avgTimeMs.ToString()} ms.");
             
             
             // experiments with threshold values
-            const int numberOfRunsThreshold = 10;
-            var csv = new StringBuilder();
-            csv.AppendLine("threshold,executionTime");
-            for (var i = 0; i < 1000; i++)
-            {
-                var sw = new Stopwatch();
-                for (var j = 0; j < numberOfRunsThreshold; j++)
-                {
-                    testData = TestData.GetTestData();
-                    sw.Start();
-                    // testData = await Parallel_Merge_Sort(testData, i);
-                    await ParallelQuickSort(testData, i);
-                    sw.Stop();
-                }
-                var elapsedMillisecondsThreshold = sw.Elapsed.TotalMilliseconds;
-                var avgTimeMsThreshold = elapsedMillisecondsThreshold / numberOfRunsThreshold;
-                csv.AppendLine($"{i}, {Math.Round(avgTimeMsThreshold, 2).ToString(CultureInfo.InvariantCulture)}");
-            }
-            
-            await File.WriteAllTextAsync("threshold_performance.csv", csv.ToString());
+            // const int numberOfRunsPerThreshold = 10;
+            // var csv = new StringBuilder();
+            // csv.AppendLine("threshold,executionTime");
+            // for (var i = 0; i < 1000; i++)
+            // {
+            //     var sw2 = new Stopwatch();
+            //     for (var j = 0; j < numberOfRunsPerThreshold; j++)
+            //     {
+            //         testData = TestData.GetTestData();
+            //         sw2.Start();
+            //         // testData = await Parallel_Merge_Sort(testData, i);
+            //         await ParallelQuickSort(testData, i);
+            //         sw2.Stop();
+            //     }
+            //     var elapsedMillisecondsThreshold = sw2.Elapsed.TotalMilliseconds;
+            //     var avgTimeMsThreshold = elapsedMillisecondsThreshold / numberOfRunsPerThreshold;
+            //     csv.AppendLine($"{i}, {Math.Round(avgTimeMsThreshold, 2).ToString(CultureInfo.InvariantCulture)}");
+            // }
+            //
+            // await File.WriteAllTextAsync("threshold_performance.csv", csv.ToString());
             
         }
         
@@ -79,8 +79,14 @@ namespace ParallelSorting
             
             var left = Helper.CopyArray(arr, 0, middle);
             var right = Helper.CopyArray(arr, middle, arr.Length);
-            var leftTask = Parallel_Merge_Sort(left, threshold);
-            var rightTask =  Parallel_Merge_Sort(right, threshold);
+            // if we do not use Task.Run here the call stack of the main thread just gets bigger and bigger - he does not delegate the work to any threads! By using Task.Run(() => Parallel...) we can avoid this problem
+            // var leftTask = Parallel_Merge_Sort(left, threshold);
+            // var rightTask =  Parallel_Merge_Sort(right, threshold);
+            // var results = await Task.WhenAll(leftTask, rightTask);
+            var left1 = left;
+            var leftTask = Task.Run(() => Parallel_Merge_Sort(left1, threshold));
+            var right1 = right;
+            var rightTask = Task.Run(() => Parallel_Merge_Sort(right1, threshold));
             var results = await Task.WhenAll(leftTask, rightTask);
             
             left = results[0];
@@ -156,13 +162,14 @@ namespace ParallelSorting
             if (left >= right)
                 return;
             var pivot = Partition(arr, left, right);
+            var tasks = new List<Task>();
             if (pivot - left < threshold)
             {
                 Quick_Sort(arr, left, pivot - 1);
             }
             else
             {
-                Parallel_Quick_Sort(arr, left, pivot - 1, threshold);
+                tasks.Add(Task.Run(() => Parallel_Quick_Sort(arr, left, pivot - 1, threshold)));
             }
 
             if (right - pivot < threshold)
@@ -171,8 +178,10 @@ namespace ParallelSorting
             }
             else
             {
-                Parallel_Quick_Sort(arr, pivot + 1, right, threshold);
+                tasks.Add(Task.Run(() => Parallel_Quick_Sort(arr, pivot + 1, right, threshold)));
             }
+
+            await Task.WhenAll(tasks);
         }
 
         
