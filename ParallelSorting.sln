@@ -2,6 +2,21 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ParallelSorting", "ParallelSorting\ParallelSorting.csproj", "{BB7D14EF-0E93-460E-A2E1-E03745A31C19}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "doc", "doc", "{00B5AFCE-002B-44A8-8B0C-E814AFA78AE9}"
+ProjectSection(SolutionItems) = preProject
+	executionTime_threshold_mergeSort.png = executionTime_threshold_mergeSort.png
+	naive_parallel_quickSort.png = naive_parallel_quickSort.png
+	naive_parallel_quickSort_bad_solution.png = naive_parallel_quickSort_bad_solution.png
+	executionTime_threshold_quickSort_bad_parallelization.png = executionTime_threshold_quickSort_bad_parallelization.png
+	executionTime_threshold_quickSort.png = executionTime_threshold_quickSort.png
+	executionTime_threshold_mergeSort_bad_parallelization.png = executionTime_threshold_mergeSort_bad_parallelization.png
+	threshold_performance_mergeSort.csv = threshold_performance_mergeSort.csv
+	threshold_performance_mergeSort_bad_parallelization.csv = threshold_performance_mergeSort_bad_parallelization.csv
+	threshold_performance_quickSort.csv = threshold_performance_quickSort.csv
+	threshold_performance_quickSort_bad_parallelization.csv = threshold_performance_quickSort_bad_parallelization.csv
+	README.md = README.md
+EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
